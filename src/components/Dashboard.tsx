@@ -258,7 +258,7 @@ export default function Dashboard() {
                   })}
                 </select>
                 <div className="relative group flex-1 w-full md:w-48">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-medium pb-0.5">R$</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-medium pb-0.5">{currency === 'BRL' ? 'R$' : currency === 'USD' ? '$' : '€'}</span>
                   <input 
                     type="text"
                     inputMode="decimal" 
