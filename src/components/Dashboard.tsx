@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Download, Settings, BarChart, FileText, Wallet, Calendar, TrendingUp, DollarSign, Plus, Trash2, Smartphone, Save, LogIn, LogOut, Cloud, Eye, EyeOff } from 'lucide-react';
 import { formatCurrency, cn } from '../lib/utils';
 import { exportToCSV, exportToPDF } from '../lib/exportUtils';
-import { SettingsModal, SupportChat } from './IntegrationWidgets';
 import type { FinancialData, ExpenseItem } from '../types';
+import { translations, Locale } from '../lib/translations';
 import { auth, loginWithGoogle, logout, saveBoardToCloud, loadBoardFromCloud } from '../firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
@@ -12,15 +12,15 @@ export default function Dashboard() {
   const [isSaving, setIsSaving] = useState(false);
   const [firebaseInitialized, setFirebaseInitialized] = useState(false);
   const [showValues, setShowValues] = useState(true);
+  const [locale, setLocale] = useState<Locale>('pt');
+  const [currency, setCurrency] = useState('BRL');
 
   const formatVisibleCur = (value: number) => {
-    return showValues ? formatCurrency(value) : 'R$ ****';
+    return showValues ? formatCurrency(value, locale, currency) : formatCurrency(0, locale, currency).replace(/[0-9.,]+/, '****');
   };
 
   const [salaryHistory, setSalaryHistory] = useState<Record<string, string>>({});
   const [data, setData] = useState<FinancialData | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [locale, setLocale] = useState<'pt'|'en'>('pt');
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [descInput, setDescInput] = useState('');
   const [valInput, setValInput] = useState('');
@@ -81,9 +81,10 @@ export default function Dashboard() {
     setIsSaving(true);
     try {
       await saveBoardToCloud(user.uid, salaryHistory, expenses, fixedExpensesList);
-      // Saved successfully
+      alert(translations[locale].savedSuccess);
     } catch (err) {
       console.error(err);
+      alert(translations[locale].saveError);
     }
     setIsSaving(false);
   };
@@ -107,7 +108,7 @@ export default function Dashboard() {
         setDeferredPrompt(null);
       }
     } else {
-      alert("Para instalar o app no seu celular:\n\n🍎 iOS: Toque em 'Compartilhar' > 'Adicionar à Tela de Início'.\n🤖 Android: Abra o menu do navegador > 'Adicionar à tela inicial'.");
+      alert(translations[locale].installAppAlert);
     }
   };
 
@@ -235,9 +236,9 @@ export default function Dashboard() {
             <div>
               <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-white mb-2 flex items-center gap-3">
                 <Wallet className="text-indigo-500" /> 
-                {locale === 'pt' ? 'Planejador Wealth' : 'Wealth Planner'}
+                {translations[locale].appTitle}
               </h1>
-              <p className="text-zinc-400 text-sm hidden sm:block">Dashboard consolidado com Open Finance e projeções automáticas.</p>
+              <p className="text-zinc-400 text-sm hidden sm:block">{translations[locale].appSubtitle}</p>
             </div>
             
             <div className="flex items-stretch flex-col md:flex-row md:items-center gap-3 w-full md:w-auto">
@@ -251,7 +252,8 @@ export default function Dashboard() {
                   {uniqueMonths.map(monthStr => {
                      const [year, month] = monthStr.split('-');
                      const date = new Date(parseInt(year), parseInt(month) - 1, 15);
-                     const label = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+                     const dateLocale = locale === 'pt' ? 'pt-BR' : locale === 'es' ? 'es-ES' : 'en-US';
+                     const label = date.toLocaleDateString(dateLocale, { month: 'short', year: 'numeric' });
                      return <option key={monthStr} value={monthStr}>{label}</option>
                   })}
                 </select>
@@ -267,7 +269,7 @@ export default function Dashboard() {
                       setSalaryHistory(updated);
                     }}
                     className="w-full bg-zinc-900/50 border border-zinc-800 rounded-full py-3 md:py-2 pl-10 pr-4 text-white focus:outline-none focus:border-indigo-500 transition-colors shadow-sm"
-                    placeholder="Salário Mensal"
+                    placeholder={translations[locale].salaryPlaceholder}
                   />
                 </div>
               </div>
@@ -277,17 +279,17 @@ export default function Dashboard() {
                   onClick={handleSaveToCloud}
                   disabled={isSaving}
                   className="flex items-center justify-center gap-2 p-3 md:p-2 rounded-full bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white border border-indigo-500/30 transition shadow-lg shrink-0 disabled:opacity-50"
-                  title="Salvar na Nuvem"
+                  title={translations[locale].saveCloud}
                 >
                   {isSaving ? <Cloud size={18} className="animate-pulse" /> : <Save size={18} />}
-                  <span className="text-sm font-medium pr-2 hidden md:inline">Salvar</span>
+                  <span className="text-sm font-medium pr-2 hidden md:inline">{translations[locale].saveCloud}</span>
                 </button>
 
                 {user ? (
                   <button
                     onClick={logout}
                     className="flex items-center justify-center p-3 md:p-2 rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-rose-400 transition"
-                    title="Sair da Conta"
+                    title={translations[locale].logout}
                   >
                     <LogOut size={18} />
                   </button>
@@ -295,7 +297,7 @@ export default function Dashboard() {
                   <button
                     onClick={() => loginWithGoogle()}
                     className="flex items-center justify-center p-3 md:p-2 rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-indigo-400 transition"
-                    title="Entrar com Google"
+                    title={translations[locale].login}
                   >
                     <LogIn size={18} />
                   </button>
@@ -304,7 +306,7 @@ export default function Dashboard() {
                 <button
                   onClick={() => setShowValues(!showValues)}
                   className="flex items-center justify-center w-12 h-12 md:w-[42px] md:h-[42px] rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-400 transition"
-                  title="Ocultar valores"
+                  title={showValues ? translations[locale].hideValues : translations[locale].viewValues}
                 >
                   {showValues ? <Eye size={18} /> : <EyeOff size={18} />}
                 </button>
@@ -312,18 +314,18 @@ export default function Dashboard() {
                 <button
                   onClick={handleInstallApp}
                   className="flex items-center justify-center gap-2 p-3 md:p-2 rounded-full bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white border border-indigo-500/30 transition shadow-lg shrink-0"
-                  title="Baixar Aplicativo"
+                  title={translations[locale].installApp}
                 >
                   <Smartphone size={18} />
-                  <span className="text-sm font-medium pr-2 hidden md:inline">App</span>
+                  <span className="text-sm font-medium pr-2 hidden md:inline">{translations[locale].installApp}</span>
                 </button>
 
-                <button onClick={() => setLocale(locale === 'pt' ? 'en' : 'pt')} className="flex items-center justify-center w-12 h-12 md:w-[42px] md:h-[42px] rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-400 transition" title="Mudar Idioma">
-                  <span className="text-xs font-bold">{locale === 'pt' ? 'PT' : 'EN'}</span>
+                <button onClick={() => setCurrency(currency === 'BRL' ? 'USD' : currency === 'USD' ? 'EUR' : 'BRL')} className="flex items-center justify-center w-12 h-12 md:w-[42px] md:h-[42px] rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-400 transition" title={translations[locale].changeCurrency}>
+                  <span className="text-xs font-bold">{currency === 'BRL' ? 'R$' : currency === 'USD' ? '$' : '€'}</span>
                 </button>
-                
-                <button onClick={() => setSettingsOpen(true)} className="flex items-center justify-center w-12 h-12 md:w-[42px] md:h-[42px] rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-400 transition">
-                   <Settings size={18} />
+
+                <button onClick={() => setLocale(locale === 'pt' ? 'en' : locale === 'en' ? 'es' : 'pt')} className="flex items-center justify-center w-12 h-12 md:w-[42px] md:h-[42px] rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-400 transition" title={translations[locale].changeLanguage}>
+                  <span className="text-xs font-bold">{locale.toUpperCase()}</span>
                 </button>
               </div>
             </div>
@@ -332,34 +334,34 @@ export default function Dashboard() {
           {data && (
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
               <MetricCard 
-                title="Despesas Fixas (50%)" 
+                title={translations[locale].fixedExpensesTitle} 
                 value={formatVisibleCur(data.fixedExpenses)} 
-                subtitle={totalMonthlyFixedPaid > 0 ? `Restam ${formatVisibleCur(remainingFixed)} (Pago: ${formatVisibleCur(totalMonthlyFixedPaid)})` : "Aluguel, contas..."}
+                subtitle={totalMonthlyFixedPaid > 0 ? `${translations[locale].remaining} ${formatVisibleCur(remainingFixed)} (${translations[locale].paid}: ${formatVisibleCur(totalMonthlyFixedPaid)})` : translations[locale].fixedExpensesDesc}
                 icon={<Calendar size={20} className="text-blue-400" />}
               />
               <MetricCard 
-                title="Passar o Mês (30%)" 
+                title={translations[locale].passMonthTitle} 
                 value={formatVisibleCur(data.variableExpenses)} 
-                subtitle={totalMonthlyExpenses > 0 ? `Restam ${formatVisibleCur(remainingVariable)} (Gasto: ${formatVisibleCur(totalMonthlyExpenses)})` : "Alimentação..."}
+                subtitle={totalMonthlyExpenses > 0 ? `${translations[locale].remaining} ${formatVisibleCur(remainingVariable)} (${translations[locale].spent}: ${formatVisibleCur(totalMonthlyExpenses)})` : translations[locale].passMonthDesc}
                 icon={<DollarSign size={20} className="text-amber-400" />}
               />
               <MetricCard 
-                title="Para Investir (20%)" 
+                title={translations[locale].toInvestTitle} 
                 value={formatVisibleCur(data.monthlyInvestment)} 
-                subtitle={`Mês. Acumulado: ${formatVisibleCur(totalInvestedAccumulated)}`}
+                subtitle={`${translations[locale].toInvestDesc} ${formatVisibleCur(totalInvestedAccumulated)}`}
                 icon={<TrendingUp size={20} className="text-emerald-400" />}
                 highlight
               />
               <MetricCard 
-                title="Independência 93x" 
+                title={translations[locale].independenceTitle} 
                 value={formatVisibleCur(data.longTermGoal)} 
-                subtitle="Meta patrimonial a longo prazo"
+                subtitle={translations[locale].independenceDesc}
                 icon={<BarChart size={20} className="text-purple-400" />}
               />
               <MetricCard 
-                title="Sobra Acumulada" 
+                title={translations[locale].accumulatedSobraTitle} 
                 value={formatVisibleCur(accumulatedLeftover)} 
-                subtitle="Fundo de Emergência"
+                subtitle={translations[locale].accumulatedSobraDesc}
                 icon={<Wallet size={20} className="text-teal-400" />}
               />
             </div>
@@ -374,17 +376,17 @@ export default function Dashboard() {
           {/* Export & Actions */}
           <div className="flex flex-col sm:flex-row justify-end gap-3 pb-2">
              <button onClick={() => exportToPDF(data)} className="flex items-center justify-center w-full sm:w-auto gap-2 text-sm bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl sm:rounded-md transition font-medium">
-               <FileText size={16} /> Exportar PDF
+               <FileText size={16} /> {translations[locale].exportPdf}
              </button>
              <button onClick={() => exportToCSV(data)} className="flex items-center justify-center w-full sm:w-auto gap-2 text-sm bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-xl sm:rounded-md transition font-medium">
-               <Download size={16} /> Download CSV
+               <Download size={16} /> {translations[locale].downloadCsv}
              </button>
           </div>
 
           <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-6 text-center">
-            <h3 className="text-zinc-100 font-medium mb-2 opacity-90">Resumo do Planejamento</h3>
+            <h3 className="text-zinc-100 font-medium mb-2 opacity-90">{translations[locale].summaryTitle}</h3>
             <p className="text-zinc-400 text-sm max-w-3xl mx-auto leading-relaxed">
-              O orçamento está distribuído conforme a regra 50/30/20. Acompanhe o registro de suas despesas nos painéis abaixo para compor o seu patrimônio e garantir a sua Independência Financeira.
+              {translations[locale].summaryDesc}
             </p>
           </div>
 
@@ -394,12 +396,12 @@ export default function Dashboard() {
               <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
               <div>
-                <h3 className="text-zinc-300 font-medium mb-1">Histórico de Gastos (Passar o Mês)</h3>
-                <p className="text-zinc-500 text-xs text-balance">Anote seus gastos para acompanhar o saldo disponível do mês</p>
+                <h3 className="text-zinc-300 font-medium mb-1">{translations[locale].dailyExpensesTitle}</h3>
+                <p className="text-zinc-500 text-xs text-balance">{translations[locale].dailyExpensesSub}</p>
               </div>
               <div className="flex flex-col items-end gap-2 text-right w-full md:w-auto">
                 <div>
-                  <p className="text-sm text-zinc-400">Gasto Total no Mês</p>
+                  <p className="text-sm text-zinc-400">{translations[locale].totalSpentMonth}</p>
                   <p className="text-xl font-semibold text-rose-400">-{formatVisibleCur(totalMonthlyExpenses)}</p>
                 </div>
               </div>
@@ -408,7 +410,7 @@ export default function Dashboard() {
             <form onSubmit={handleAddExpense} className="flex flex-col md:flex-row gap-3 mb-6">
               <input
                 type="text"
-                placeholder="Descrição (ex: Almoço, Uber)"
+                placeholder={translations[locale].descPlaceholder}
                 value={descInput}
                 onChange={(e) => setDescInput(e.target.value)}
                 className="flex-1 bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-4 py-3 md:py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-zinc-600"
@@ -431,27 +433,28 @@ export default function Dashboard() {
                 className="bg-indigo-600 hover:bg-indigo-500 text-white py-3 md:py-2 md:px-5 rounded-lg flex items-center justify-center gap-2 transition"
               >
                 <Plus size={20} />
-                <span className="font-medium">Adicionar</span>
+                <span className="font-medium">{translations[locale].addBtn}</span>
               </button>
             </form>
 
             <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
               {filteredExpenses.length === 0 ? (
                 <div className="text-center text-zinc-600 py-8 text-sm border border-dashed border-zinc-800 rounded-xl">
-                  Nenhum gasto registrado neste mês.
+                  {translations[locale].noExpensesMonth}
                 </div>
               ) : (
                 filteredExpenses.map((expense) => {
                   const expenseDate = new Date(expense.date);
                   const isToday = expenseDate.toDateString() === new Date().toDateString();
-                  const timeString = expenseDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-                  const dateString = expenseDate.toLocaleDateString('pt-BR', {day: '2-digit', month: 'short'});
+                  const dateLocale = locale === 'pt' ? 'pt-BR' : locale === 'es' ? 'es-ES' : 'en-US';
+                  const timeString = expenseDate.toLocaleTimeString(dateLocale, {hour: '2-digit', minute:'2-digit'});
+                  const dateString = expenseDate.toLocaleDateString(dateLocale, {day: '2-digit', month: 'short'});
                   
                   return (
                   <div key={expense.id} className="flex items-center justify-between bg-zinc-800/30 border border-zinc-700/30 p-3.5 rounded-xl group hover:bg-zinc-800/50 transition">
                     <div>
                       <p className="text-zinc-200 font-medium text-sm">{expense.description}</p>
-                      <p className="text-zinc-500 text-xs mt-0.5">{isToday ? `Hoje, ${timeString}` : `${dateString}, ${timeString}`}</p>
+                      <p className="text-zinc-500 text-xs mt-0.5">{isToday ? `${translations[locale].today}, ${timeString}` : `${dateString}, ${timeString}`}</p>
                     </div>
                     <div className="flex items-center gap-4">
                       <p className="text-white font-medium">{formatVisibleCur(expense.amount)}</p>
@@ -474,12 +477,12 @@ export default function Dashboard() {
           <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
               <div>
-                <h3 className="text-zinc-300 font-medium mb-1">Despesas Fixas Pagas</h3>
-                <p className="text-zinc-500 text-xs text-balance">Anote as contas fixas já pagas para compor o orçamento do mês</p>
+                <h3 className="text-zinc-300 font-medium mb-1">{translations[locale].fixedPaidTitle}</h3>
+                <p className="text-zinc-500 text-xs text-balance">{translations[locale].fixedPaidSub}</p>
               </div>
               <div className="flex flex-col items-end gap-2 text-right w-full md:w-auto">
                 <div>
-                  <p className="text-sm text-zinc-400">Total Pago no Mês</p>
+                  <p className="text-sm text-zinc-400">{translations[locale].totalPaidMonth}</p>
                   <p className="text-xl font-semibold text-emerald-400">-{formatVisibleCur(totalMonthlyFixedPaid)}</p>
                 </div>
               </div>
@@ -488,7 +491,7 @@ export default function Dashboard() {
             <form onSubmit={handleAddFixedExpense} className="flex flex-col md:flex-row gap-3 mb-6">
               <input
                 type="text"
-                placeholder="Descrição (ex: Aluguel, Internet)"
+                placeholder={translations[locale].fixedDescPlaceholder}
                 value={fixedDescInput}
                 onChange={(e) => setFixedDescInput(e.target.value)}
                 className="flex-1 bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-4 py-3 md:py-2 text-white focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-zinc-600"
@@ -511,27 +514,28 @@ export default function Dashboard() {
                 className="bg-indigo-600 hover:bg-indigo-500 text-white py-3 md:py-2 md:px-5 rounded-lg flex items-center justify-center gap-2 transition"
               >
                 <Plus size={20} />
-                <span className="font-medium">Adicionar</span>
+                <span className="font-medium">{translations[locale].addBtn}</span>
               </button>
             </form>
 
             <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
               {filteredFixedExpenses.length === 0 ? (
                 <div className="text-center text-zinc-600 py-8 text-sm border border-dashed border-zinc-800 rounded-xl">
-                  Nenhuma despesa fixa registrada como paga neste mês.
+                  {translations[locale].noFixedExpensesMonth}
                 </div>
               ) : (
                 filteredFixedExpenses.map((expense) => {
                   const expenseDate = new Date(expense.date);
                   const isToday = expenseDate.toDateString() === new Date().toDateString();
-                  const timeString = expenseDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-                  const dateString = expenseDate.toLocaleDateString('pt-BR', {day: '2-digit', month: 'short'});
+                  const dateLocale = locale === 'pt' ? 'pt-BR' : locale === 'es' ? 'es-ES' : 'en-US';
+                  const timeString = expenseDate.toLocaleTimeString(dateLocale, {hour: '2-digit', minute:'2-digit'});
+                  const dateString = expenseDate.toLocaleDateString(dateLocale, {day: '2-digit', month: 'short'});
                   
                   return (
                   <div key={expense.id} className="flex items-center justify-between bg-zinc-800/30 border border-zinc-700/30 p-3.5 rounded-xl group hover:bg-zinc-800/50 transition">
                     <div>
                       <p className="text-zinc-200 font-medium text-sm">{expense.description}</p>
-                      <p className="text-zinc-500 text-xs mt-0.5">{isToday ? `Hoje, ${timeString}` : `${dateString}, ${timeString}`}</p>
+                      <p className="text-zinc-500 text-xs mt-0.5">{isToday ? `${translations[locale].today}, ${timeString}` : `${dateString}, ${timeString}`}</p>
                     </div>
                     <div className="flex items-center gap-4">
                       <p className="text-white font-medium">{formatVisibleCur(expense.amount)}</p>
@@ -557,13 +561,9 @@ export default function Dashboard() {
       {!data && (
         <div className="max-w-md mx-auto mt-20 text-center text-zinc-500 animate-in fade-in">
           <Wallet size={48} className="mx-auto mb-4 opacity-50" />
-          <p>Insira seu salário do mês selecionado acima para iniciar suas análises gráficas e metas.</p>
+          <p>{translations[locale].missingDataLabel}</p>
         </div>
       )}
-
-      {/* Widgets & Modals */}
-      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
-      <SupportChat />
 
     </div>
   );

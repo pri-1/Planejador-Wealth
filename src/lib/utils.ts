@@ -5,10 +5,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Format currency in BRL
-export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", {
+// Format currency
+export function formatCurrency(value: number, locale: string = 'pt', currency: string = 'BRL'): string {
+  const dateLocale = locale === 'pt' ? 'pt-BR' : locale === 'es' ? 'es-ES' : 'en-US';
+  return new Intl.NumberFormat(dateLocale, {
     style: "currency",
-    currency: "BRL",
+    currency: currency,
   }).format(value);
 }
