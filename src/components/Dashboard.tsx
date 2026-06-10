@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Settings, BarChart, FileText, Wallet, Calendar, TrendingUp, DollarSign, Plus, Trash2, Smartphone, Save, LogIn, LogOut, Cloud, Eye, EyeOff } from 'lucide-react';
+import { Download, Settings, BarChart, FileText, Wallet, Calendar, TrendingUp, DollarSign, Plus, Trash2, Smartphone, Save, LogIn, LogOut, Cloud, Eye, EyeOff, Menu, X } from 'lucide-react';
 import { formatCurrency, cn } from '../lib/utils';
 import { exportToCSV, exportToPDF } from '../lib/exportUtils';
 import type { FinancialData, ExpenseItem } from '../types';
@@ -14,6 +14,7 @@ export default function Dashboard() {
   const [showValues, setShowValues] = useState(true);
   const [locale, setLocale] = useState<Locale>('pt');
   const [currency, setCurrency] = useState('BRL');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const formatVisibleCur = (value: number) => {
     return showValues ? formatCurrency(value, locale, currency) : formatCurrency(0, locale, currency).replace(/[0-9.,]+/, '****');
@@ -274,59 +275,77 @@ export default function Dashboard() {
                 </div>
               </div>
               
-              <div className="flex items-center justify-between gap-2 md:w-auto">
+              <div className="flex items-center justify-between gap-2 md:w-auto relative">
                 <button
-                  onClick={handleSaveToCloud}
-                  disabled={isSaving}
-                  className="flex items-center justify-center gap-2 p-3 md:p-2 rounded-full bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white border border-indigo-500/30 transition shadow-lg shrink-0 disabled:opacity-50"
-                  title={translations[locale].saveCloud}
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className="flex items-center justify-center p-3 md:p-2 rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-400 transition"
                 >
-                  {isSaving ? <Cloud size={18} className="animate-pulse" /> : <Save size={18} />}
-                  <span className="text-sm font-medium pr-2 hidden md:inline">{translations[locale].saveCloud}</span>
+                  {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
                 </button>
+                {isMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl overflow-hidden z-20 flex flex-col p-2 gap-1 animate-in fade-in slide-in-from-top-2">
+                    <button
+                      onClick={() => { handleSaveToCloud(); setIsMenuOpen(false); }}
+                      disabled={isSaving}
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800 text-zinc-300 hover:text-white transition w-full disabled:opacity-50 text-left"
+                    >
+                      {isSaving ? <Cloud size={18} className="animate-pulse text-indigo-400" /> : <Save size={18} className="text-indigo-400" />}
+                      <span className="text-sm font-medium">{translations[locale].saveCloud}</span>
+                    </button>
 
-                {user ? (
-                  <button
-                    onClick={logout}
-                    className="flex items-center justify-center p-3 md:p-2 rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-rose-400 transition"
-                    title={translations[locale].logout}
-                  >
-                    <LogOut size={18} />
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => loginWithGoogle()}
-                    className="flex items-center justify-center p-3 md:p-2 rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-indigo-400 transition"
-                    title={translations[locale].login}
-                  >
-                    <LogIn size={18} />
-                  </button>
+                    {user ? (
+                      <button
+                        onClick={() => { logout(); setIsMenuOpen(false); }}
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800 text-zinc-300 hover:text-rose-400 transition w-full text-left"
+                      >
+                        <LogOut size={18} className="text-rose-400" />
+                        <span className="text-sm font-medium">{translations[locale].logout}</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => { loginWithGoogle(); setIsMenuOpen(false); }}
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800 text-zinc-300 hover:text-indigo-400 transition w-full text-left"
+                      >
+                        <LogIn size={18} className="text-indigo-400" />
+                        <span className="text-sm font-medium">{translations[locale].login}</span>
+                      </button>
+                    )}
+
+                    <div className="h-px bg-zinc-800 my-1 mx-2"></div>
+
+                    <button
+                      onClick={() => { setShowValues(!showValues); setIsMenuOpen(false); }}
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800 text-zinc-300 hover:text-white transition w-full text-left"
+                    >
+                      {showValues ? <EyeOff size={18} className="text-zinc-400" /> : <Eye size={18} className="text-zinc-400" />}
+                      <span className="text-sm font-medium">{showValues ? translations[locale].hideValues : translations[locale].viewValues}</span>
+                    </button>
+
+                    <button
+                      onClick={() => { handleInstallApp(); setIsMenuOpen(false); }}
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800 text-zinc-300 hover:text-white transition w-full text-left"
+                    >
+                      <Smartphone size={18} className="text-zinc-400" />
+                      <span className="text-sm font-medium">{translations[locale].installApp}</span>
+                    </button>
+
+                    <button 
+                      onClick={() => { setCurrency(currency === 'BRL' ? 'USD' : currency === 'USD' ? 'EUR' : 'BRL'); setIsMenuOpen(false); }} 
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800 text-zinc-300 hover:text-white transition w-full text-left"
+                    >
+                      <span className="w-[18px] text-center font-bold text-xs text-zinc-400">{currency === 'BRL' ? 'R$' : currency === 'USD' ? '$' : '€'}</span>
+                      <span className="text-sm font-medium">{translations[locale].changeCurrency} ({currency === 'BRL' ? 'USD' : currency === 'USD' ? 'EUR' : 'BRL'})</span>
+                    </button>
+
+                    <button 
+                      onClick={() => { setLocale(locale === 'pt' ? 'en' : locale === 'en' ? 'es' : 'pt'); setIsMenuOpen(false); }} 
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800 text-zinc-300 hover:text-white transition w-full text-left"
+                    >
+                      <span className="w-[18px] text-center font-bold text-xs text-zinc-400">{locale === 'pt' ? 'EN' : locale === 'en' ? 'ES' : 'PT'}</span>
+                      <span className="text-sm font-medium">{translations[locale].changeLanguage} ({locale === 'pt' ? 'EN' : locale === 'en' ? 'ES' : 'PT'})</span>
+                    </button>
+                  </div>
                 )}
-
-                <button
-                  onClick={() => setShowValues(!showValues)}
-                  className="flex items-center justify-center w-12 h-12 md:w-[42px] md:h-[42px] rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-400 transition"
-                  title={showValues ? translations[locale].hideValues : translations[locale].viewValues}
-                >
-                  {showValues ? <Eye size={18} /> : <EyeOff size={18} />}
-                </button>
-
-                <button
-                  onClick={handleInstallApp}
-                  className="flex items-center justify-center gap-2 p-3 md:p-2 rounded-full bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white border border-indigo-500/30 transition shadow-lg shrink-0"
-                  title={translations[locale].installApp}
-                >
-                  <Smartphone size={18} />
-                  <span className="text-sm font-medium pr-2 hidden md:inline">{translations[locale].installApp}</span>
-                </button>
-
-                <button onClick={() => setCurrency(currency === 'BRL' ? 'USD' : currency === 'USD' ? 'EUR' : 'BRL')} className="flex items-center justify-center w-12 h-12 md:w-[42px] md:h-[42px] rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-400 transition" title={translations[locale].changeCurrency}>
-                  <span className="text-xs font-bold">{currency === 'BRL' ? 'R$' : currency === 'USD' ? '$' : '€'}</span>
-                </button>
-
-                <button onClick={() => setLocale(locale === 'pt' ? 'en' : locale === 'en' ? 'es' : 'pt')} className="flex items-center justify-center w-12 h-12 md:w-[42px] md:h-[42px] rounded-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-400 transition" title={translations[locale].changeLanguage}>
-                  <span className="text-xs font-bold">{locale.toUpperCase()}</span>
-                </button>
               </div>
             </div>
           </header>
@@ -573,16 +592,16 @@ export default function Dashboard() {
 function MetricCard({ title, value, subtitle, icon, highlight = false }: { title: string; value: string; subtitle: string; icon: React.ReactNode; highlight?: boolean }) {
   return (
     <div className={cn(
-      "p-4 sm:p-5 rounded-2xl border transition-all duration-300 w-full",
+      "p-3 sm:p-4 rounded-xl border transition-all duration-300 w-full",
       highlight ? "bg-indigo-900/10 border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.1)]" : "bg-zinc-900/30 border-zinc-800/80"
     )}>
-      <div className="flex justify-between items-start mb-3 sm:mb-4">
-        <h3 className="text-zinc-400 text-xs sm:text-sm font-medium pr-2">{title}</h3>
-        <div className="p-1.5 sm:p-2 bg-zinc-800/50 rounded-lg shrink-0">{icon}</div>
+      <div className="flex items-center gap-2 mb-2">
+        <div className="p-1.5 rounded-lg bg-zinc-800/50 shrink-0">{icon}</div>
+        <h3 className="text-zinc-400 text-[11px] sm:text-xs font-medium leading-tight truncate">{title}</h3>
       </div>
       <div>
-        <p className={cn("text-xl sm:text-2xl font-semibold tracking-tight break-words", highlight ? "text-indigo-100" : "text-white")}>{value}</p>
-        <p className="text-xs text-zinc-500 mt-1 leading-snug">{subtitle}</p>
+        <p className={cn("text-lg sm:text-xl font-semibold tracking-tight break-words mb-0.5", highlight ? "text-indigo-100" : "text-white")}>{value}</p>
+        <p className="text-[10px] sm:text-xs text-zinc-500 line-clamp-2 leading-tight" title={subtitle}>{subtitle}</p>
       </div>
     </div>
   );
