@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Context & Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    function isValidBoardInfo(data) {
+      return data.keys().hasAll(['ownerId', 'salaryHistory', 'updatedAt']) 
+          && data.ownerId == request.auth.uid 
+          && data.salaryHistory is map 
+          && data.updatedAt == request.time;
+    }
+
+    function isBoardInfoUpdateValid(data) {
+      return data.ownerId == existing().ownerId // Immutable
+          && data.salaryHistory is map 
+          && data.updatedAt == request.time;
+    }
+
+    function isValidExpense(data) {
+      return data.keys().hasAll(['description', 'amount', 'date', 'type']) 
+          && data.description is string && data.description.size() > 0 && data.description.size() <= 200
+          && data.amount is number 
+          && data.date is string && data.date.size() <= 30
+          && data.type is string && (data.type == 'daily' || data.type == 'fixed');
+    }
+
+    match /users/{userId} {
+      // Must be signed in, accessing own profile, and valid ID
+      allow read: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+      
+      allow create: if isSignedIn() 
+                    && request.auth.uid == userId 
+                    && isValidId(userId)
+                    && isValidBoardInfo(incoming()) 
+                    && incoming().keys().size() == 3;
+                    
+      allow update: if isSignedIn() 
+                    && request.auth.uid == userId 
+                    && isValidId(userId)
+                    && isBoardInfoUpdateValid(incoming())
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['salaryHistory', 'updatedAt']);
+
+      match /expenses/{expenseId} {
+        allow read, list: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+        
+        allow create: if isSignedIn() 
+                      && request.auth.uid == userId 
+                      && isValidId(userId)
+                      && isValidId(expenseId)
+                      && isValidExpense(incoming())
+                      && incoming().keys().size() == 4;
+
+        allow update: if isSignedIn() 
+                      && request.auth.uid == userId 
+                      && isValidId(userId)
+                      && isValidId(expenseId)
+                      && isValidExpense(incoming())
+                      && incoming().diff(existing()).affectedKeys().hasOnly(['description', 'amount', 'date', 'type']);
+
+        allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidId(expenseId);
+      }
+    }
+  }
+}

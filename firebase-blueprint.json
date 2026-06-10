@@ -1,0 +1,37 @@
+{
+  "entities": {
+    "BoardInfo": {
+      "title": "Board Info",
+      "description": "User's top-level board metadata and salary map",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "salaryHistory": { "type": "object" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["ownerId", "salaryHistory", "updatedAt"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "An expense item",
+      "type": "object",
+      "properties": {
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string" },
+        "type": { "type": "string" }
+      },
+      "required": ["description", "amount", "date", "type"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/BoardInfo" },
+      "description": "User profile with board metadata"
+    },
+    "users/{userId}/expenses/{expenseId}": {
+      "schema": { "$ref": "#/entities/Expense" },
+      "description": "User expenses"
+    }
+  }
+}

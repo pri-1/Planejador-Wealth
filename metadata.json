@@ -1,0 +1,6 @@
+{
+  "name": "Planejador Financeiro",
+  "description": "Calculadora e dashboard financeiro personalizado com exportação e modo escuro.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
