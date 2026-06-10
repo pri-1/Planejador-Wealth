@@ -230,8 +230,8 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-black text-zinc-100 font-sans p-4 md:p-8 selection:bg-indigo-500/30">
-      {/* Sticky Header & Metrics Container */}
-      <div className="sticky top-0 z-40 bg-black/85 backdrop-blur-xl pb-4 pt-4 md:pt-8 -mt-4 md:-mt-8 -mx-4 px-4 md:-mx-8 md:px-8 border-b border-zinc-800/80 shadow-2xl shadow-black/50 mb-8">
+      {/* Header & Metrics Container */}
+      <div className="bg-black/85 pb-4 pt-4 md:pt-8 -mt-4 md:-mt-8 -mx-4 px-4 md:-mx-8 md:px-8 border-b border-zinc-800/80 mb-8">
         <div className="max-w-7xl mx-auto space-y-6">
           <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div>

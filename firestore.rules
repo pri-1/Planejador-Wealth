@@ -8,7 +8,7 @@ service cloud.firestore {
 
     // Context & Helpers
     function isSignedIn() { return request.auth != null; }
-    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function isValidId(id) { return id is string && id.size() <= 128; }
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
 
@@ -47,10 +47,10 @@ service cloud.firestore {
                     && request.auth.uid == userId 
                     && isValidId(userId)
                     && isBoardInfoUpdateValid(incoming())
-                    && incoming().diff(existing()).affectedKeys().hasOnly(['salaryHistory', 'updatedAt']);
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['ownerId', 'salaryHistory', 'updatedAt']);
 
       match /expenses/{expenseId} {
-        allow read, list: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+        allow read: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
         
         allow create: if isSignedIn() 
                       && request.auth.uid == userId 

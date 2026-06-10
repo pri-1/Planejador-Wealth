@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDocFromServer, setDoc, collection, getDocs, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 import { ExpenseItem } from './types';
 
@@ -30,8 +30,8 @@ export async function saveBoardToCloud(userId: string, salaryHistory: Record<str
   await setDoc(userDocRef, {
     ownerId: userId,
     salaryHistory,
-    updatedAt: new Date().toISOString()
-  });
+    updatedAt: serverTimestamp()
+  }, { merge: true });
 
   // Save expenses and fixed expenses
   // First clear existing
